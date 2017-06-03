@@ -64,7 +64,6 @@ public class PlayerActivity extends AppCompatActivity {
             Uri uri;
             if (resultData != null) {
                 uri = resultData.getData();
-                System.out.println(String.format("URI: %s", uri));
                 mediaPlayer = new MediaPlayer();
                 mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 try {
