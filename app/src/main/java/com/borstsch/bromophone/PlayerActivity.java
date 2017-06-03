@@ -1,5 +1,6 @@
 package com.borstsch.bromophone;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -8,6 +9,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 
 public class PlayerActivity extends AppCompatActivity {
+    static MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +27,14 @@ public class PlayerActivity extends AppCompatActivity {
             }
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.file);
+        mediaPlayer.start();
     }
 
+    @Override
+    protected void onStop() {
+        mediaPlayer.stop();
+        super.onStop();
+    }
 }
