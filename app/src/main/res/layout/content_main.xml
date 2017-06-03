@@ -12,5 +12,26 @@
         android:id="@+id/ip_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView" />
+        android:text="TextView"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/button_server"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onServerClick"
+        android:text="IAMSERVER"
+        app:layout_constraintTop_toBottomOf="@+id/ip_text"
+        app:layout_constraintRight_toLeftOf="@+id/button_client" />
+
+
+    <Button
+        android:id="@+id/button_client"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="IAMCLIENT"
+        app:layout_constraintLeft_toRightOf="@+id/button_server"
+        app:layout_constraintTop_toBottomOf="@+id/ip_text" />
+
 </android.support.constraint.ConstraintLayout>
