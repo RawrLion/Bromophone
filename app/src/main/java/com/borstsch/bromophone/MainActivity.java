@@ -3,8 +3,6 @@ package com.borstsch.bromophone;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.format.Formatter;
@@ -15,6 +13,7 @@ import android.widget.TextView;
 import android.widget.EditText;
 
 import static android.provider.AlarmClock.EXTRA_MESSAGE;
+import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
 
