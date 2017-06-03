@@ -67,6 +67,9 @@ public class PlayerActivity extends AppCompatActivity {
                 mediaPlayer = new MediaPlayer();
                 mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 try {
+                    System.out.println("URI: " + uri);
+                    // TODO : URI: content://com.android.externalstorage.documents/document/primary%3ADownload%2FLinkin_Park_-_Numb.mp3 -- failure
+                    // TODO : RI: content://com.android.externalstorage.documents/document/primary%3ATelegram%2FTelegram%20Documents%2F2_5267004526358954103.mp3 -- OK
                     mediaPlayer.setDataSource(this, uri);
                     mediaPlayer.prepare();
                 } catch (IOException e) {
