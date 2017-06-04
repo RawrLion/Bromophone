@@ -30,6 +30,7 @@
         android:id="@+id/button_client"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:onClick="onClientClick"
         android:text="IAMCLIENT"
         app:layout_constraintLeft_toRightOf="@+id/button_server"
         app:layout_constraintTop_toBottomOf="@+id/ip_text" />
