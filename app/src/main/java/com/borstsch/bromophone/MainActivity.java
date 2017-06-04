@@ -16,12 +16,15 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 
 import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Dispatcher mDispatcher;
     private TextView textView;
 
     @Override
@@ -36,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
         String ipAddress = Formatter.formatIpAddress(wifiManager.getConnectionInfo().getIpAddress());
         textView.setText("Your Device IP Address: " + ipAddress);
 
+        mDispatcher = new Dispatcher(this);
+
     }
 
     /** Called when the user taps the Send button */
@@ -44,91 +49,19 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // ---------------- START OF MY SHIT ---------------------------
-
-    private ServerSocket mServerSocket;
-    private int mLocalPort;
-    private NsdManager mNsdManager;
-    private NsdManager.RegistrationListener mRegistrationListener;
-    private String mServiceName;
-
-    public void registerService(int port) {
-        // Create the NsdServiceInfo object, and populate it.
-        NsdServiceInfo serviceInfo  = new NsdServiceInfo();
-
-        // The name is subject to change based on conflicts
-        // with other services advertised on the same network.
-        serviceInfo.setServiceName("NsdSound");
-        serviceInfo.setServiceType("_http._tcp.");
-        serviceInfo.setPort(port);
-
-        mNsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
-
-        mNsdManager.registerService(
-                serviceInfo, NsdManager.PROTOCOL_DNS_SD, mRegistrationListener);
-    }
-
-    public void initializeServerSocket() throws IOException {
-        // Initialize a server socket on the next available port.
-        mServerSocket = new ServerSocket(0);
-
-        // Store the chosen port.
-        mLocalPort =  mServerSocket.getLocalPort();
-    }
-
-    public void onServerClick(View view) throws IOException {
-        initializeServerSocket();
-        initializeRegistrationListener();
-        registerService(mLocalPort);
-        textView.setText("ZHOPA");
-    }
-
-
-
-    public void initializeRegistrationListener() {
-        mRegistrationListener = new NsdManager.RegistrationListener() {
-
-            @Override
-            public void onServiceRegistered(NsdServiceInfo NsdServiceInfo) {
-                // Save the service name.  Android may have changed it in order to
-                // resolve a conflict, so update the name you initially requested
-                // with the name Android actually used.
-                mServiceName = NsdServiceInfo.getServiceName();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textView = (TextView) findViewById(R.id.ip_text);
-                        textView.setText("Success, port: " + mLocalPort + ", Service name: " + mServiceName);
-                    }
-                });
-            }
-
-            @Override
-            public void onRegistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
-                // Registration failed!  Put debugging code here to determine why.
-            }
-
-            @Override
-            public void onServiceUnregistered(NsdServiceInfo arg0) {
-                // Service has been unregistered.  This only happens when you call
-                // NsdManager.unregisterService() and pass in this listener.
-            }
-
-            @Override
-            public void onUnregistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
-                // Unregistration failed.  Put debugging code here to determine why.
-            }
-        };
-    }
-
-
-    // --------------- END OF MY SHIT ---------------------
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
+    }
+
+    public void onServerClick(View view) throws IOException {
+        mDispatcher.runServer();
+    }
+
+    public void onClientClick(View view) {
+        mDispatcher.runClient();
     }
 
     @Override
