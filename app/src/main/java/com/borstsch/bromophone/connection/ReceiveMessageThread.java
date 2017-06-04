@@ -2,16 +2,19 @@ package com.borstsch.bromophone.connection;
 
 import android.app.Activity;
 import android.media.MediaPlayer;
-import android.util.Log;
 import android.widget.TextView;
 
 import com.borstsch.bromophone.R;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-
+import java.util.Iterator;
 
 
 class ReceiveMessageThread extends Thread {
@@ -23,31 +26,47 @@ class ReceiveMessageThread extends Thread {
         this.hostPort = hostPort;
     }
 
+
     @Override
     public void run() {
-        try (Socket socket = new ServerSocket(hostPort).accept();
-             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream())) {
+        String messageFromServer;
+        try (ServerSocket serverSocket = new ServerSocket(hostPort)) {
+            while (true) {
+                try (Socket socket = serverSocket.accept();
+                     DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                ) {
+                    messageFromServer = dataInputStream.readUTF();
 
-            // transfer JSONObject as String to the server
-            //dataOutputStream.writeUTF(jsonData.toString());
-            //Log.i(TAG, "waiting for response from host");
+                    JSONObject jsondata = new JSONObject(messageFromServer);
 
-            // Thread will wait till server replies
-            String signal = dataInputStream.readUTF();
-            if (signal.equals(SendMessageThread.PLAY_COMMAND)) {
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView textView = (TextView) mActivity.findViewById(R.id.ip_text);
-                        textView.setText("PLAYING MUSIC");
-                        MediaPlayer mediaPlayer = MediaPlayer.create(mActivity, R.raw.file);
-                        mediaPlayer.start();
-                    }
-                });
+                    processMessage(jsondata);
+
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
             }
-
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void processMessage(JSONObject message) {
+        for (Iterator<String> msgIterator = message.keys(); msgIterator.hasNext();) {
+            String request = msgIterator.next();
+            switch (request) {
+                case SendMessageThread.PLAY_COMMAND: {
+                    mActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView textView = (TextView) mActivity.findViewById(R.id.ip_text);
+                            textView.setText("PLAYING MUSIC");
+                            MediaPlayer mediaPlayer = MediaPlayer.create(mActivity, R.raw.file);
+                            mediaPlayer.start();
+                        }
+                    });
+                }
+            }
         }
     }
 }
