@@ -43,9 +43,6 @@ public class Dispatcher {
     }
 
     public void runClient() {
-        if(mResolveListener == null) {
-            initializeResolveListener();
-        }
         initializeDiscoveryListener();
         mNsdManager = (NsdManager) mContext.getSystemService(Context.NSD_SERVICE);
         mNsdManager.discoverServices(
@@ -132,7 +129,7 @@ public class Dispatcher {
                     // transport layer for this service.
                     Log.d(TAG, "Unknown Service Type: " + service.getServiceType());
                 } else if (service.getServiceName().contains("NsdSound")){
-                    mNsdManager.resolveService(service, mResolveListener);
+                    mNsdManager.resolveService(service, new MyResolveListener());
 
                 }
             }
@@ -164,36 +161,33 @@ public class Dispatcher {
 
     }
 
-    public void initializeResolveListener() {
-        mResolveListener = new NsdManager.ResolveListener() {
+    private class MyResolveListener implements NsdManager.ResolveListener {
+        @Override
+        public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
+            // Called when the resolve fails.  Use the error code to debug.
+            Log.e(TAG, "Resolve failed" + errorCode);
+        }
 
-            @Override
-            public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
-                // Called when the resolve fails.  Use the error code to debug.
-                Log.e(TAG, "Resolve failed" + errorCode);
+        @Override
+        public void onServiceResolved(NsdServiceInfo serviceInfo) {
+            Log.e(TAG, "Resolve Succeeded. " + serviceInfo);
+
+            if (serviceInfo.getServiceName().equals(mServiceName)) {
+                Log.d(TAG, "Same IP.");
+                return;
             }
+            mService = serviceInfo;
+            //int port = mService.getPort();
+            //InetAddress host = mService.getHost();
 
-            @Override
-            public void onServiceResolved(NsdServiceInfo serviceInfo) {
-                Log.e(TAG, "Resolve Succeeded. " + serviceInfo);
-
-                if (serviceInfo.getServiceName().equals(mServiceName)) {
-                    Log.d(TAG, "Same IP.");
-                    return;
+            ((Activity) mContext).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
+                    textView.setText("Client ok, Service name: " + mService.getServiceName()
+                            + "port: " + mService.getPort() + " host: " + mService.getHost());
                 }
-                mService = serviceInfo;
-                //int port = mService.getPort();
-                //InetAddress host = mService.getHost();
-
-                ((Activity) mContext).runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
-                        textView.setText("Client ok, Service name: " + mService.getServiceName()
-                                + "port: " + mService.getPort() + " host: " + mService.getHost());
-                    }
-                });
-            }
-        };
+            });
+        }
     }
 }
