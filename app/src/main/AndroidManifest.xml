@@ -30,6 +30,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.borstsch.bromophone.MainActivity" />
         </activity>
+        <service android:name=".MusicPlayerService" />
     </application>
 
 </manifest>

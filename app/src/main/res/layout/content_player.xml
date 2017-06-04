@@ -8,4 +8,20 @@
     tools:context="com.borstsch.bromophone.PlayerActivity"
     tools:showIn="@layout/activity_player">
 
+    <Button
+        android:id="@+id/choose_track"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@android:color/holo_blue_light"
+        android:elevation="24dp"
+        android:onClick="performFileSearch"
+        android:text="Choose Track"
+        tools:layout_constraintTop_creator="1"
+        tools:layout_constraintRight_creator="1"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="124dp"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </android.support.constraint.ConstraintLayout>

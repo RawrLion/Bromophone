@@ -14,7 +14,7 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView textView;
+    private TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /** Called when the user taps the Send button */
-    public void sendMessage(View view) {
+    public void onOKClick(View view) {
         Intent intent = new Intent(this, PlayerActivity.class);
         startActivity(intent);
     }

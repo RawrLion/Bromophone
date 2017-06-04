@@ -1,21 +1,44 @@
 package com.borstsch.bromophone;
 
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.widget.Toast;
 
 import java.io.IOException;
 
 
 public class PlayerActivity extends AppCompatActivity {
     private static final int READ_REQUEST_CODE = 42;
-    private static MediaPlayer mediaPlayer;
+    private MusicPlayerService player;
+    boolean serviceBound = false;
+    //Binding this Client to the AudioPlayer Service
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            MusicPlayerService.LocalBinder binder = (MusicPlayerService.LocalBinder) service;
+            player = binder.getService();
+            serviceBound = true;
+
+            Toast.makeText(PlayerActivity.this, "Service Bound", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +47,46 @@ public class PlayerActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean("ServiceState", serviceBound);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        serviceBound = savedInstanceState.getBoolean("ServiceState");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (serviceBound) {
+            unbindService(serviceConnection);
+            //service is active
+            player.stopSelf();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    private void playAudio(Uri media) {
+        //Check is service is active
+        if (!serviceBound) {
+            Intent playerIntent = new Intent(this, MusicPlayerService.class);
+            playerIntent.putExtra("media", media.toString());
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } else {
+            //Service is active
+            //Send media with BroadcastReceiver
+        }
     }
 
     /**
@@ -64,25 +127,17 @@ public class PlayerActivity extends AppCompatActivity {
             Uri uri;
             if (resultData != null) {
                 uri = resultData.getData();
-                mediaPlayer = new MediaPlayer();
-                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                try {
-                    System.out.println("URI: " + uri);
+                playAudio(uri);
                     // TODO : URI: content://com.android.externalstorage.documents/document/primary%3ADownload%2FLinkin_Park_-_Numb.mp3 -- failure
                     // TODO : RI: content://com.android.externalstorage.documents/document/primary%3ATelegram%2FTelegram%20Documents%2F2_5267004526358954103.mp3 -- OK
-                    mediaPlayer.setDataSource(this, uri);
-                    mediaPlayer.prepare();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                mediaPlayer.start();
+
             }
         }
     }
-
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
+//
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//        mediaPlayer.release();
+//    }
 }
