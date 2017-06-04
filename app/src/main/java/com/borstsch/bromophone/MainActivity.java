@@ -62,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
         mDispatcher.runClient();
     }
 
+    public void onPlayClick(View view) {
+        mDispatcher.sendMessage();
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will

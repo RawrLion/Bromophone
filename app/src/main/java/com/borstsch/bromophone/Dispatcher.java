@@ -45,6 +45,7 @@ public class Dispatcher {
 
     private List<String> clientIPs;
     SocketServerThread socketServerThread;
+    private JSONObject jsonData;
 
     public Dispatcher(Context mContext) {
         this.mContext = mContext;
@@ -315,7 +316,6 @@ public class Dispatcher {
     }
 
     private class SocketServerTask extends AsyncTask<JSONObject, Void, Void> {
-        private JSONObject jsonData;
         private boolean success;
 
         @Override
@@ -340,9 +340,12 @@ public class Dispatcher {
                 String response = dataInputStream.readUTF();
                 if (response.equals("Connection Accepted")) {
                     success = true;
+                    receiveMessage();
                 } else {
                     success = false;
                 }
+
+
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -387,6 +390,82 @@ public class Dispatcher {
                 textView.setText("Connected");
             } else {
                 textView.setText("NOT Connected");
+            }
+        }
+    }
+
+    public class SendMessageThread extends Thread {
+        @Override
+        public void run() {
+            for (String address : clientIPs) {
+                try {
+                    Socket socket = new Socket(InetAddress.getByName(address), mLocalPort);
+                    //String string = "{""}";
+                    DataInputStream is = new DataInputStream(socket.getInputStream());
+                    DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+                    os.writeUTF("play");
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void sendMessage() {
+        SendMessageThread sendThread = new SendMessageThread();
+        sendThread.start();
+    }
+
+    private void receiveMessage() {
+        Socket socket = null;
+        DataInputStream dataInputStream = null;
+        //DataOutputStream dataOutputStream = null;
+
+        try {
+            // Create a new Socket instance and connect to host
+            socket = new Socket(hostAddress, hostPort);
+
+            //dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            dataInputStream = new DataInputStream(socket.getInputStream());
+
+            // transfer JSONObject as String to the server
+            //dataOutputStream.writeUTF(jsonData.toString());
+            //Log.i(TAG, "waiting for response from host");
+
+            // Thread will wait till server replies
+            String signal = dataInputStream.readUTF();
+            if (signal.equals("play")) {
+                ((Activity) mContext).runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
+                        textView.setText("PLAYING MUSIC");
+                    }
+                });
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
+            // close socket
+            if (socket != null) {
+                try {
+                    Log.i(TAG, "closing the socket");
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // close input stream
+            if (dataInputStream != null) {
+                try {
+                    dataInputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
