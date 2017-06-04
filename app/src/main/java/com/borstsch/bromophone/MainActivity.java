@@ -14,12 +14,12 @@ import android.widget.TextView;
 
 import java.io.IOException;
 
+import com.borstsch.bromophone.connection.Dispatcher;
 import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
 public class MainActivity extends AppCompatActivity {
 
     private Dispatcher mDispatcher;
-    private TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        textView = (TextView) findViewById(R.id.ip_text);
+        TextView textView = (TextView) findViewById(R.id.ip_text);
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         String ipAddress = Formatter.formatIpAddress(wifiManager.getConnectionInfo().getIpAddress());
         textView.setText("Your Device IP Address: " + ipAddress);
