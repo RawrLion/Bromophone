@@ -96,7 +96,7 @@ public class Dispatcher {
 
             try {
                 Log.i(TAG, "Creating server socket");
-                mServerSocket = new ServerSocket(0);
+                mServerSocket = new ServerSocket(12345);
                 mLocalPort =  mServerSocket.getLocalPort();
 
                 while (true) {
