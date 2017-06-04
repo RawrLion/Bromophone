@@ -2,6 +2,7 @@ package com.borstsch.bromophone;
 
 import android.app.Activity;
 import android.content.Context;
+import android.media.MediaPlayer;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.net.wifi.WifiManager;
@@ -9,7 +10,6 @@ import android.os.AsyncTask;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -340,7 +340,6 @@ public class Dispatcher {
                 String response = dataInputStream.readUTF();
                 if (response.equals("Connection Accepted")) {
                     success = true;
-                    receiveMessage();
                 } else {
                     success = false;
                 }
@@ -388,6 +387,7 @@ public class Dispatcher {
             TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
             if (success) {
                 textView.setText("Connected");
+                receiveMessage();
             } else {
                 textView.setText("NOT Connected");
             }
@@ -399,6 +399,8 @@ public class Dispatcher {
         public void run() {
             for (String address : clientIPs) {
                 try {
+//                    System.out.println(mLocalPort);
+//                    System.out.println(hostPort);
                     Socket socket = new Socket(InetAddress.getByName(address), mLocalPort);
                     //String string = "{""}";
                     DataInputStream is = new DataInputStream(socket.getInputStream());
@@ -417,56 +419,66 @@ public class Dispatcher {
         sendThread.start();
     }
 
-    private void receiveMessage() {
-        Socket socket = null;
-        DataInputStream dataInputStream = null;
-        //DataOutputStream dataOutputStream = null;
+    public class ReceiveMessageThread extends Thread {
+        @Override
+        public void run() {
+            Socket socket = null;
+            DataInputStream dataInputStream = null;
+            //DataOutputStream dataOutputStream = null;
 
-        try {
-            // Create a new Socket instance and connect to host
-            socket = new Socket(hostAddress, hostPort);
+            try {
+                // Create a new Socket instance and connect to host
+                socket = new ServerSocket(hostPort).accept(); //new Socket(hostAddress, hostPort);
 
-            //dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            dataInputStream = new DataInputStream(socket.getInputStream());
+                //dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                dataInputStream = new DataInputStream(socket.getInputStream());
 
-            // transfer JSONObject as String to the server
-            //dataOutputStream.writeUTF(jsonData.toString());
-            //Log.i(TAG, "waiting for response from host");
+                // transfer JSONObject as String to the server
+                //dataOutputStream.writeUTF(jsonData.toString());
+                //Log.i(TAG, "waiting for response from host");
 
-            // Thread will wait till server replies
-            String signal = dataInputStream.readUTF();
-            if (signal.equals("play")) {
-                ((Activity) mContext).runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
-                        textView.setText("PLAYING MUSIC");
-                    }
-                });
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-            // close socket
-            if (socket != null) {
-                try {
-                    Log.i(TAG, "closing the socket");
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                // Thread will wait till server replies
+                String signal = dataInputStream.readUTF();
+                if (signal.equals("play")) {
+                    ((Activity) mContext).runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView textView = (TextView) ((Activity) mContext).findViewById(R.id.ip_text);
+                            textView.setText("PLAYING MUSIC");
+                            MediaPlayer mediaPlayer = MediaPlayer.create(mContext, R.raw.file);
+                            mediaPlayer.start();
+                        }
+                    });
                 }
-            }
 
-            // close input stream
-            if (dataInputStream != null) {
-                try {
-                    dataInputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+
+                // close socket
+                if (socket != null) {
+                    try {
+                        Log.i(TAG, "closing the socket");
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // close input stream
+                if (dataInputStream != null) {
+                    try {
+                        dataInputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
+    }
+
+    private void receiveMessage() {
+        ReceiveMessageThread receiveThread = new ReceiveMessageThread();
+        receiveThread.start();
     }
 }

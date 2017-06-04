@@ -1,10 +1,7 @@
 package com.borstsch.bromophone;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.net.nsd.NsdManager;
-import android.net.nsd.NsdServiceInfo;
+import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -16,9 +13,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.UnknownHostException;
 
 import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
@@ -66,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void onPlayClick(View view) {
         mDispatcher.sendMessage();
+        MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.file);
+        mediaPlayer.start();
     }
 
     @Override
