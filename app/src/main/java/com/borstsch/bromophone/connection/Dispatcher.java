@@ -30,7 +30,7 @@ import static android.content.ContentValues.TAG;
 
 public class Dispatcher {
     private static final String REQUEST_CONNECT_CLIENT = "request-connect-client";
-    public static final String CONNECTION_ACCEPTED_MSG = "Connection Accepted";
+    public static final String CONNECTION_ACCEPTED_MSG = "Message Accepted";
 
     private NsdManager mNsdManager;
     private NsdManager.RegistrationListener mRegistrationListener;
@@ -256,8 +256,7 @@ public class Dispatcher {
         return Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
     }
 
-    public void sendMessage() {
-        SendMessageThread sendThread = new SendMessageThread(clientIPs, mLocalPort);
-        sendThread.start();
+    public SendMessageThread getSendMessageThread() {
+        return new SendMessageThread(clientIPs, mLocalPort);
     }
 }

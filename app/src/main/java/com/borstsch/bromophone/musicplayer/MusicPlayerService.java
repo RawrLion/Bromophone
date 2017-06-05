@@ -92,7 +92,7 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
         callStateListener();
         //ACTION_AUDIO_BECOMING_NOISY -- change in audio outputs -- BroadcastReceiver
         registerBecomingNoisyReceiver();
-        //Listen for new Audio to play -- BroadcastReceiver
+        //Listen for new Audio to startPlayer -- BroadcastReceiver
         registerPlayNewAudio();
         registerPauseAudio();
         registerResumeAudio();
@@ -544,7 +544,7 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
             play_pauseAction = playbackAction(1);
         } else if (playbackStatus == PlaybackStatus.PAUSED) {
             notificationAction = android.R.drawable.ic_media_play;
-            //create the play action
+            //create the startPlayer action
             play_pauseAction = playbackAction(0);
         }
 

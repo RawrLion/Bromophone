@@ -22,9 +22,11 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.borstsch.bromophone.R;
+import com.borstsch.bromophone.User;
+import com.borstsch.bromophone.connection.SendMessageThread;
+import com.borstsch.bromophone.connection.Synchronizer;
 
 import java.util.ArrayList;
 
@@ -43,7 +45,7 @@ public class PlayerActivity extends AppCompatActivity {
             player = binder.getService();
             serviceBound = true;
 
-            Toast.makeText(PlayerActivity.this, "Service Bound", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(PlayerActivity.this, "Service Bound", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -58,6 +60,9 @@ public class PlayerActivity extends AppCompatActivity {
     ImageView collapsingImageView;
     int imageIndex = 0;
 
+    private Synchronizer synchronizer;
+
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,19 +72,24 @@ public class PlayerActivity extends AppCompatActivity {
         collapsingImageView = (ImageView) findViewById(R.id.collapsingImageView);
         loadCollapsingImage(imageIndex);
 
-        if (askStoragePermissions()) {
-            loadAudio();
-        }
-        initRecyclerView();
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        if (askStoragePermissions()) {
+            loadAudio();
+            initRecyclerView();
+        }
+
+        Intent intent = getIntent();
+        synchronizer = new Synchronizer((SendMessageThread) intent.getSerializableExtra("msg thread"),
+                (User)intent.getSerializableExtra("user"));
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_READ_EXTERNAL_STORAGE: {
                 // If request is cancelled, the result arrays are empty.
@@ -172,6 +182,7 @@ public class PlayerActivity extends AppCompatActivity {
             Intent playerIntent = new Intent(this, MusicPlayerService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            synchronizer.startPlayer();
         } else {
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudioIndex(audioIndex);
@@ -181,7 +192,7 @@ public class PlayerActivity extends AppCompatActivity {
         }
     }
 
-    private void resumeAudio(int audioIndex) {
+    private void resumeAudio(int ignored) {
         Intent broadcastIntent = new Intent(Broadcast_RESUME);
         sendBroadcast(broadcastIntent);
     }
@@ -225,6 +236,7 @@ public class PlayerActivity extends AppCompatActivity {
             unbindService(serviceConnection);
             //service is active
             player.stopSelf();
+            synchronizer.stop();
         }
     }
 }

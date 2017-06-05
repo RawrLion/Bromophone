@@ -15,11 +15,14 @@ import android.widget.TextView;
 import java.io.IOException;
 
 import com.borstsch.bromophone.connection.Dispatcher;
+import com.borstsch.bromophone.connection.SendMessageThread;
 import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
 public class MainActivity extends AppCompatActivity {
 
     private Dispatcher mDispatcher;
+    private User user;
+    private SendMessageThread sendMessageThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,17 +54,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onServerClick(View view) throws IOException {
-        mDispatcher.runServer();
+        if (user == null || user == User.SERVER) {
+            mDispatcher.runServer();
+            user = User.SERVER;
+        }
     }
 
     public void onClientClick(View view) {
-        mDispatcher.runClient();
+        if (user == null || user == User.CLIENT) {
+            mDispatcher.runClient();
+            user = User.CLIENT;
+        }
     }
 
     public void onPlayClick(View view) {
-        mDispatcher.sendMessage();
-        MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.file);
-        mediaPlayer.start();
+        if (user == User.SERVER) {
+            sendMessageThread = mDispatcher.getSendMessageThread();
+            Intent intent = new Intent(this, PlayerActivity.class);
+            intent.putExtra("user", user);
+            intent.putExtra("msg thread", sendMessageThread);
+            startActivity(intent);
+        } else if (user == User.CLIENT) {
+            TextView textView = (TextView) findViewById(R.id.ip_text);
+            textView.setText("Wait For Server To Start a Party");
+        } else {
+            TextView textView = (TextView) findViewById(R.id.ip_text);
+            textView.setText("Specify Your User Type First");
+        }
     }
 
     @Override
