@@ -1,7 +1,7 @@
 package com.borstsch.bromophone;
 
 
-public enum User {
+public enum UserType {
     SERVER,
     CLIENT
 }

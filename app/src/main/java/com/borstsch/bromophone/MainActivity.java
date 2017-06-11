@@ -1,7 +1,6 @@
 package com.borstsch.bromophone;
 
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -21,8 +20,7 @@ import com.borstsch.bromophone.musicplayer.PlayerActivity;
 public class MainActivity extends AppCompatActivity {
 
     private Dispatcher mDispatcher;
-    private User user;
-    private SendMessageThread sendMessageThread;
+    private UserType userType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    /** Called when the user taps the Send button */
+    /** Called when the userType taps the Send button */
     public void onOKClick(View view) {
         Intent intent = new Intent(this, PlayerActivity.class);
         startActivity(intent);
@@ -54,32 +52,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onServerClick(View view) throws IOException {
-        if (user == null || user == User.SERVER) {
+        if (userType == null || userType == UserType.SERVER) {
             mDispatcher.runServer();
-            user = User.SERVER;
+            userType = UserType.SERVER;
         }
     }
 
     public void onClientClick(View view) {
-        if (user == null || user == User.CLIENT) {
+        if (userType == null || userType == UserType.CLIENT) {
             mDispatcher.runClient();
-            user = User.CLIENT;
+            userType = UserType.CLIENT;
         }
     }
 
     public void onPlayClick(View view) {
-        if (user == User.SERVER) {
-            sendMessageThread = mDispatcher.getSendMessageThread();
+        if (userType == UserType.SERVER) {
+            SendMessageThread sendMessageThread = mDispatcher.getSendMessageThread();
             Intent intent = new Intent(this, PlayerActivity.class);
-            intent.putExtra("user", user);
+            intent.putExtra("user", userType);
             intent.putExtra("msg thread", sendMessageThread);
             startActivity(intent);
-        } else if (user == User.CLIENT) {
+        } else if (userType == UserType.CLIENT) {
             TextView textView = (TextView) findViewById(R.id.ip_text);
             textView.setText("Wait For Server To Start a Party");
         } else {
             TextView textView = (TextView) findViewById(R.id.ip_text);
-            textView.setText("Specify Your User Type First");
+            textView.setText("Specify Your UserType Type First");
         }
     }
 

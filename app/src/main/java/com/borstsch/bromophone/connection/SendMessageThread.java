@@ -19,21 +19,21 @@ public class SendMessageThread extends Thread implements Serializable {
     private List<String> clientIPs;
     private int mLocalPort;
     private Queue<JSONObject> messageQueue = new ConcurrentLinkedQueue<>();
-    private boolean killRecieved = false;
+    private boolean killReceived = false;
 
     SendMessageThread(List<String> clientIPs, int localPort) {
         this.clientIPs = clientIPs;
         mLocalPort = localPort;
     }
 
-    public void setKillRecieved() {
-        killRecieved = true;
+    public void setKillReceived() {
+        killReceived = true;
     }
 
     @Override
     public void run() {
         JSONObject msg;
-        while (!killRecieved) {
+        while (!killReceived) {
             for (String address : clientIPs) {
                 try (Socket socket = new Socket(InetAddress.getByName(address), mLocalPort);
                      DataInputStream is = new DataInputStream(socket.getInputStream());

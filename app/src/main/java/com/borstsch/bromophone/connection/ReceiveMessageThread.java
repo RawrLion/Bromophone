@@ -2,13 +2,12 @@ package com.borstsch.bromophone.connection;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.media.MediaPlayer;
-import android.widget.TextView;
+import android.support.annotation.NonNull;
 
-import com.borstsch.bromophone.R;
-import com.borstsch.bromophone.User;
+import com.borstsch.bromophone.UserType;
 import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,17 +20,22 @@ import java.net.Socket;
 import java.util.Iterator;
 
 import static com.borstsch.bromophone.connection.Message.END_MESSAGES_COMMAND;
-import static com.borstsch.bromophone.connection.Message.PLAY_COMMAND;
 import static com.borstsch.bromophone.connection.Message.START_PLAYER_COMMAND;
 
 
-class ReceiveMessageThread extends Thread {
+public class ReceiveMessageThread extends Thread {
+    private final UserType userType = UserType.CLIENT;
     private Activity mActivity;
     private int hostPort;
+    private static boolean killReceived = false;
 
     ReceiveMessageThread(Activity activity, int hostPort) {
         mActivity = activity;
         this.hostPort = hostPort;
+    }
+
+    public static void setKillReceived() {
+        killReceived = true;
     }
 
 
@@ -39,10 +43,10 @@ class ReceiveMessageThread extends Thread {
     public void run() {
         String messageFromServer;
         try (ServerSocket serverSocket = new ServerSocket(hostPort)) {
-            while (true) {
+            while (!killReceived) {
                 try (Socket socket = serverSocket.accept();
                      DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream())
                 ) {
                     while (!(messageFromServer = dataInputStream.readUTF()).contains(END_MESSAGES_COMMAND)) {
 
@@ -60,30 +64,20 @@ class ReceiveMessageThread extends Thread {
         }
     }
 
-    private void processMessage(final JSONObject message) {
+    private void processMessage(@NonNull final JSONObject message) {
         for (Iterator<String> msgIterator = message.keys(); msgIterator.hasNext();) {
             String command = msgIterator.next();
             switch (command) {
                 case START_PLAYER_COMMAND: {
                     Intent intent = new Intent(mActivity, PlayerActivity.class);
-                    intent.putExtra("user", User.CLIENT);
+                    intent.putExtra("userType", userType);
                     intent.putExtra("msg thread", (Serializable) null);
                     mActivity.startActivity(intent);
+                    break;
                 }
-                case PLAY_COMMAND: {
-                    mActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TextView textView = (TextView) mActivity.findViewById(R.id.ip_text);
-                            try {
-                                textView.append(message.getString(PLAY_COMMAND));
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            MediaPlayer mediaPlayer = MediaPlayer.create(mActivity, R.raw.file);
-                            mediaPlayer.start();
-                        }
-                    });
+                default: {
+                    EventBus.getDefault().post(message);
+                    break;
                 }
             }
         }
