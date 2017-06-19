@@ -32,9 +32,7 @@ import java.util.ArrayList;
 public class MusicPlayerService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener,
         MediaPlayer.OnInfoListener, MediaPlayer.OnBufferingUpdateListener,
-
         AudioManager.OnAudioFocusChangeListener {
-
 
     public static final String ACTION_PLAY = "com.borstsch.bromophone.musicplayer.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.borstsch.bromophone.musicplayer.ACTION_PAUSE";
@@ -65,7 +63,6 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
     private ArrayList<Audio> audioList;
     private int audioIndex = -1;
     private Audio activeAudio; //an object on the currently playing audio
-
 
     //Handle incoming phone calls
     private boolean ongoingCall = false;
@@ -165,6 +162,8 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
         //unregister BroadcastReceivers
         unregisterReceiver(becomingNoisyReceiver);
         unregisterReceiver(playNewAudio);
+        unregisterReceiver(pauseAudio);
+        unregisterReceiver(resumeAudio);
 
         //clear cached playlist
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
@@ -242,7 +241,9 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
             case AudioManager.AUDIOFOCUS_GAIN:
                 // resume playback
                 if (mediaPlayer == null) initMediaPlayer();
-                else if (!mediaPlayer.isPlaying()) mediaPlayer.start();
+                else if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
                 mediaPlayer.setVolume(1.0f, 1.0f);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
@@ -526,12 +527,12 @@ public class MusicPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void buildNotification(PlaybackStatus playbackStatus) {
 
-        /**
-         * Notification actions -> playbackAction()
-         *  0 -> Play
-         *  1 -> Pause
-         *  2 -> Next track
-         *  3 -> Previous track
+        /*
+          Notification actions -> playbackAction()
+           0 -> Play
+           1 -> Pause
+           2 -> Next track
+           3 -> Previous track
          */
 
         int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized

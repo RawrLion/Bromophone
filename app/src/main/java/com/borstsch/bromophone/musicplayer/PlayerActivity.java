@@ -24,14 +24,29 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.borstsch.bromophone.R;
-import com.borstsch.bromophone.User;
+import com.borstsch.bromophone.UserType;
+import com.borstsch.bromophone.connection.Message;
+import com.borstsch.bromophone.connection.ReceiveMessageThread;
 import com.borstsch.bromophone.connection.SendMessageThread;
 import com.borstsch.bromophone.connection.Synchronizer;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONObject;
+
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import static com.borstsch.bromophone.connection.Message.PAUSE_COMMAND;
+import static com.borstsch.bromophone.connection.Message.PLAY_COMMAND;
+import static com.borstsch.bromophone.connection.Message.RESUME_COMMAND;
+import static com.borstsch.bromophone.connection.Message.START_PLAYER_COMMAND;
 
 
 public class PlayerActivity extends AppCompatActivity {
+
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.borstsch.bromophone.musicplayer.PlayNewAudio";
     public static final String Broadcast_PAUSE = "com.borstsch.bromophone.musicplayer.PauseAudio";
     public static final String Broadcast_RESUME = "com.borstsch.bromophone.musicplayer.ResumeAudio";
@@ -54,13 +69,15 @@ public class PlayerActivity extends AppCompatActivity {
         }
     };
     boolean serviceBound = false;
-    private MusicPlayerService player;
-
     private ArrayList<Audio> playList;
+    private MusicPlayerService player;
+    private int chosenTrack;
+
     ImageView collapsingImageView;
     int imageIndex = 0;
 
     private Synchronizer synchronizer;
+    private UserType user;
 
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -68,6 +85,7 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
+        EventBus.getDefault().register(this);
 
         collapsingImageView = (ImageView) findViewById(R.id.collapsingImageView);
         loadCollapsingImage(imageIndex);
@@ -82,8 +100,12 @@ public class PlayerActivity extends AppCompatActivity {
         }
 
         Intent intent = getIntent();
-        synchronizer = new Synchronizer((SendMessageThread) intent.getSerializableExtra("msg thread"),
-                (User)intent.getSerializableExtra("user"));
+        user = (UserType) intent.getSerializableExtra("user");
+        synchronizer = new Synchronizer(
+                    (SendMessageThread) intent.getSerializableExtra("msg thread"),
+                    user);
+
+        synchronizer.startPlayer();
     }
 
     @Override
@@ -133,19 +155,30 @@ public class PlayerActivity extends AppCompatActivity {
             recyclerView.addOnItemTouchListener(new CustomTouchListener(this, new onItemClickListener() {
                 @Override
                 public void onClick(View view, int index) {
-                    if (CustomTouchListener.timesTouched == 0) {
-                        playAudio(index);
-                    } else {
-                        if (CustomTouchListener.timesTouched % 2 == 0) {
-                            resumeAudio(index);
-                        } else {
-                            pauseAudio(index);
+                    if (CustomTouchListener.timesTouched == 0 || index != chosenTrack) {
+                        if (user == UserType.SERVER) {
+                            playAudio(index);
                         }
-                    }
+
+                        CustomTouchListener.timesTouched = 0;
+                        chosenTrack = index;
+                    } else {
+                            if (CustomTouchListener.timesTouched % 2 == 0) {
+                                if (user == UserType.SERVER) {
+                                    resumeAudio(index);
+                                }
+                            } else {
+                                if (user == UserType.SERVER) {
+                                    pauseAudio(index);
+                                }
+                            }
+                        }
+
                     CustomTouchListener.timesTouched += 1;
                 }
             }));
         }
+
     }
 
     private void loadCollapsingImage(int i) {
@@ -182,7 +215,7 @@ public class PlayerActivity extends AppCompatActivity {
             Intent playerIntent = new Intent(this, MusicPlayerService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-            synchronizer.startPlayer();
+
         } else {
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudioIndex(audioIndex);
@@ -190,9 +223,13 @@ public class PlayerActivity extends AppCompatActivity {
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
             sendBroadcast(broadcastIntent);
         }
+
+        synchronizer.playTrack(playList.get(audioIndex));
     }
 
-    private void resumeAudio(int ignored) {
+    private void resumeAudio(int audioIndex) {
+        synchronizer.resumeTrack(playList.get(audioIndex));
+
         Intent broadcastIntent = new Intent(Broadcast_RESUME);
         sendBroadcast(broadcastIntent);
     }
@@ -201,6 +238,8 @@ public class PlayerActivity extends AppCompatActivity {
         System.out.println("Pause Audio");
         StorageUtil storage = new StorageUtil(getApplicationContext());
         storage.storeAudioIndex(audioIndex);
+
+        synchronizer.pauseTrack(playList.get(audioIndex));
 
         Intent broadcastIntent = new Intent(Broadcast_PAUSE);
         sendBroadcast(broadcastIntent);
@@ -229,6 +268,32 @@ public class PlayerActivity extends AppCompatActivity {
         cursor.close();
     }
 
+    @Subscribe
+    public void onEvent(JSONObject message) {
+        for (Iterator<String> msgIterator = message.keys(); msgIterator.hasNext();) {
+            String command = msgIterator.next();
+            switch (command) {
+                case PLAY_COMMAND:
+                    playAudio(chosenTrack);
+                    break;
+                case PAUSE_COMMAND:
+                    pauseAudio(chosenTrack);
+                    break;
+                case RESUME_COMMAND:
+                    resumeAudio(chosenTrack);
+            }
+        }
+    }
+
+    public static List<? extends Number> createUser(UserType user) {
+        switch(user) {
+            case SERVER:
+                return new ArrayList<>();
+            default:
+                return new ArrayList<>();
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -237,6 +302,7 @@ public class PlayerActivity extends AppCompatActivity {
             //service is active
             player.stopSelf();
             synchronizer.stop();
+            EventBus.getDefault().unregister(this);
         }
     }
 }
