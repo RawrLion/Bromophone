@@ -1,10 +1,7 @@
 package com.borstsch.bromophone;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.net.nsd.NsdManager;
-import android.net.nsd.NsdServiceInfo;
+import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -16,14 +13,16 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.UnknownHostException;
+
+import com.borstsch.bromophone.connection.Dispatcher;
+import com.borstsch.bromophone.connection.SendMessageThread;
+import com.borstsch.bromophone.musicplayer.PlayerActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView textView;
     private Dispatcher mDispatcher;
+    private User user;
+    private SendMessageThread sendMessageThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,8 +31,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        textView = (TextView) findViewById(R.id.ip_text);
-        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+        TextView textView = (TextView) findViewById(R.id.ip_text);
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         String ipAddress = Formatter.formatIpAddress(wifiManager.getConnectionInfo().getIpAddress());
         textView.setText("Your Device IP Address: " + ipAddress);
 
@@ -42,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /** Called when the user taps the Send button */
-    public void sendMessage(View view) {
+    public void onOKClick(View view) {
         Intent intent = new Intent(this, PlayerActivity.class);
         startActivity(intent);
     }
@@ -55,15 +54,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onServerClick(View view) throws IOException {
-        mDispatcher.runServer();
+        if (user == null || user == User.SERVER) {
+            mDispatcher.runServer();
+            user = User.SERVER;
+        }
     }
 
     public void onClientClick(View view) {
-        mDispatcher.runClient();
+        if (user == null || user == User.CLIENT) {
+            mDispatcher.runClient();
+            user = User.CLIENT;
+        }
     }
 
     public void onPlayClick(View view) {
-        mDispatcher.sendMessage();
+        if (user == User.SERVER) {
+            sendMessageThread = mDispatcher.getSendMessageThread();
+            Intent intent = new Intent(this, PlayerActivity.class);
+            intent.putExtra("user", user);
+            intent.putExtra("msg thread", sendMessageThread);
+            startActivity(intent);
+        } else if (user == User.CLIENT) {
+            TextView textView = (TextView) findViewById(R.id.ip_text);
+            textView.setText("Wait For Server To Start a Party");
+        } else {
+            TextView textView = (TextView) findViewById(R.id.ip_text);
+            textView.setText("Specify Your User Type First");
+        }
     }
 
     @Override
