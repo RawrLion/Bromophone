@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         if (userType == null || userType == UserType.SERVER) {
             mDispatcher.runServer();
             userType = UserType.SERVER;
+            //Toast.makeText(this, "СОСИ ПИСОС", Toast.LENGTH_LONG).show();
         }
     }
 
